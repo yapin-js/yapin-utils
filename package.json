@@ -1,0 +1,28 @@
+{
+  "name": "yapin-utils",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The yapin.js utility bot: release announcements and a help desk for the yapin.js docs.",
+  "type": "module",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node --env-file=.env bot.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yapin-js/yapin-utils.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yapin-js/yapin-utils/issues"
+  },
+  "homepage": "https://github.com/yapin-js/yapin-utils#readme",
+  "license": "MIT",
+  "dependencies": {
+    "yapin.js": "^0.1.0-beta.1"
+  }
+}
