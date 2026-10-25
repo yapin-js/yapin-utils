@@ -42,6 +42,15 @@ export default class Utility extends Module {
       run: (ctx) => this.npm(ctx, ctx.values.package),
     },
     {
+      name: 'channelid',
+      description: 'Show the id of a channel, or of every text channel here',
+      category: 'Utility',
+      aliases: ['channels'],
+      serverOnly: true,
+      options: [{ name: 'channel', type: 'channel', description: 'One channel (leave out to list them all)' }],
+      run: (ctx) => this.channelIds(ctx, ctx.values.channel),
+    },
+    {
       name: 'install',
       description: 'How to install yapin.js and start a bot',
       category: 'Utility',
@@ -106,6 +115,18 @@ export default class Utility extends Module {
     if (repoURL?.startsWith('https://')) buttons.push(ButtonBuilder.link('Repository', repoURL));
     if (info.homepage?.startsWith('https://') && info.homepage !== repoURL) buttons.push(ButtonBuilder.link('Homepage', info.homepage));
     return ctx.reply({ embeds: [embed], components: [new ActionRowBuilder(...buttons)] });
+  }
+
+  async channelIds(ctx, channel) {
+    if (channel) return ctx.reply(`${channel} is \`${channel.id}\``);
+    const channels = await ctx.server.channels.fetch({ type: 'text' });
+    const lines = channels.map((c) => `${c} \`${c.id}\``);
+    const embed = new EmbedBuilder()
+      .setColor('Yapin')
+      .setTitle(`Text channels in ${ctx.server.name ?? 'this server'}`)
+      .setDescription(truncate(lines.join('\n') || 'I can\'t see any text channels here.', 4096))
+      .setFooter({ text: 'RELEASE_CHANNELS takes names too, so you rarely need these' });
+    return ctx.reply({ embeds: [embed] });
   }
 
   install(ctx) {

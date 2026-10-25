@@ -1,5 +1,6 @@
 import { EmbedBuilder, Module } from 'yapin.js';
 import { config } from '../config.js';
+import { resolveChannels } from '../lib/channels.js';
 import { PackageWatcher, describeVersion, publishedVersions } from '../lib/npm.js';
 import { gatherRelease, installEmbed, releaseComponents, releaseEmbed } from '../lib/releases.js';
 import { docs, store } from '../lib/shared.js';
@@ -8,6 +9,8 @@ import { docs, store } from '../lib/shared.js';
 const NOTES_GRACE_MS = 15 * 60_000;
 /** Never post more than this many versions in one go (say, after the bot was off for a while). */
 const MAX_PER_CHECK = 5;
+/** Channel names from RELEASE_CHANNELS are looked up again after this, in case they're renamed. */
+const CHANNEL_NAMES_TTL_MS = 10 * 60_000;
 
 /**
  * Watches npm for new versions and posts a release card, with links, to every channel
@@ -16,6 +19,7 @@ const MAX_PER_CHECK = 5;
 export default class Releases extends Module {
   watcher = new PackageWatcher(config.packageName);
   checking = null;
+  configured = null;
 
   commands = [
     {
@@ -64,6 +68,8 @@ export default class Releases extends Module {
   load() {
     // Wait for login so channels can be sent to, then check on a timer.
     const start = () => {
+      // Look the configured channels up now, so a typo in RELEASE_CHANNELS shows at startup.
+      this.configuredChannels({ log: true }).catch((error) => this.logger.warn(`Couldn't look up RELEASE_CHANNELS: ${error.message}`));
       this.setTimeout(() => this.check(), 5_000);
       this.setInterval(() => this.check(), config.pollMinutes * 60_000);
     };
@@ -118,15 +124,25 @@ export default class Releases extends Module {
     return posted;
   }
 
-  /** Every channel that wants release posts: from /releases channel, plus RELEASE_CHANNEL_IDS. */
-  targets() {
+  /** RELEASE_CHANNELS as ids. Names are looked up once, then again every 10 minutes. */
+  async configuredChannels({ log = false } = {}) {
+    if (this.configured && Date.now() - this.configured.at < CHANNEL_NAMES_TTL_MS) return this.configured.ids;
+    const { ids, problems, found } = await resolveChannels(this.client, config.releaseChannels);
+    this.configured = { at: Date.now(), ids };
+    if (log) for (const { ref, channel, server } of found) this.logger.info(`RELEASE_CHANNELS: "${ref}" is #${channel.name} in ${server} (${channel.id})`);
+    for (const problem of problems) this.logger.warn(`RELEASE_CHANNELS: ${problem}`);
+    return ids;
+  }
+
+  /** Every channel that wants release posts: from /releases channel, plus RELEASE_CHANNELS. */
+  async targets() {
     const fromServers = Object.values(store.data.servers).map((s) => s.releaseChannelId).filter(Boolean);
-    return [...new Set([...fromServers, ...config.releaseChannels])];
+    return [...new Set([...fromServers, ...(await this.configuredChannels())])];
   }
 
   async announce(release) {
     const payload = { embeds: [releaseEmbed(release)], components: releaseComponents(release) };
-    const targets = this.targets();
+    const targets = await this.targets();
     this.logger.info(`Announcing ${release.name} ${release.version} in ${targets.length} channel(s)`);
     const results = await Promise.allSettled(targets.map((id) => this.client.send(id, payload)));
     results.forEach((result, i) => {

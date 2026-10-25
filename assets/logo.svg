@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="title">
+  <title id="title">yapin-utils</title>
+  <defs>
+    <linearGradient id="head" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff7d5e"/>
+      <stop offset="1" stop-color="#ff6b4a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background: the yapin.js card colour -->
+  <rect width="512" height="512" rx="112" fill="#18191d"/>
+
+  <!-- Antenna -->
+  <rect x="244" y="96" width="24" height="60" rx="12" fill="#ff6b4a"/>
+  <circle cx="256" cy="92" r="28" fill="#ff6b4a"/>
+  <circle cx="247" cy="83" r="8" fill="#fff" opacity=".55"/>
+
+  <!-- Ears -->
+  <rect x="66" y="214" width="44" height="88" rx="22" fill="#ff6b4a"/>
+  <rect x="402" y="214" width="44" height="88" rx="22" fill="#ff6b4a"/>
+
+  <!-- Head, shaped like a chat bubble -->
+  <path fill="url(#head)" d="M168 144h176a72 72 0 0 1 72 72v94a72 72 0 0 1-72 72H222l-74 50a8 8 0 0 1-12-8l8-48.6A72 72 0 0 1 96 310v-94a72 72 0 0 1 72-72z"/>
+
+  <!-- Visor and eyes -->
+  <rect x="138" y="188" width="236" height="128" rx="60" fill="#18191d"/>
+  <rect x="190" y="220" width="38" height="64" rx="19" fill="#fff"/>
+  <rect x="284" y="220" width="38" height="64" rx="19" fill="#fff"/>
+
+  <!-- Smile -->
+  <path d="M224 344q32 20 64 0" fill="none" stroke="#18191d" stroke-width="14" stroke-linecap="round"/>
+
+  <!-- Utility badge: a wrench -->
+  <!-- Kept inside the circle a round avatar crop leaves -->
+  <circle cx="376" cy="376" r="64" fill="#fff" stroke="#18191d" stroke-width="16"/>
+  <g transform="translate(376 376) rotate(45)" fill="#ff6b4a">
+    <rect x="-10" y="-4" width="20" height="46" rx="10"/>
+    <circle cx="0" cy="-16" r="25"/>
+    <rect x="-9" y="-48" width="18" height="30" rx="4" fill="#fff"/>
+  </g>
+</svg>

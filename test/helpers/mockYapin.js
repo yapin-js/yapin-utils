@@ -1,5 +1,5 @@
 // Vendored from yapin.js (MIT, https://github.com/yapin-js/yapin.js/blob/main/test/helpers/mockYapin.js),
-// with routes added for fetching a channel and a server, which this bot uses.
+// with routes added for listing and fetching servers and channels, which this bot uses.
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 
@@ -24,6 +24,8 @@ export async function startMockYapin({ botId = randomUUID(), ownerId = randomUUI
     roles: [],
     rateLimitNext: 0,
     channels: new Map(),
+    /** id → name */
+    servers: new Map(),
     serverOwnerId: randomUUID(),
   };
 
@@ -96,12 +98,21 @@ export async function startMockYapin({ botId = randomUUID(), ownerId = randomUUI
       return json(res, 200, { user: { id: m[1], username: `user-${m[1].slice(0, 4)}`, display_name: null, avatar_path: null, badges: [] } });
     }
     if (req.method === 'PUT' && path === '/me/status') return json(res, 200, { ok: true });
+    if (req.method === 'GET' && path === '/servers') {
+      return json(res, 200, { servers: [...state.servers].map(([id, name]) => ({ id, name, owner_id: state.serverOwnerId })) });
+    }
+    const inServer = /^\/servers\/([^/]+)\/channels$/.exec(path);
+    if (req.method === 'GET' && (path === '/channels' || inServer)) {
+      const type = url.searchParams.get('type');
+      const channels = [...state.channels.values()].filter((c) => (!type || c.type === type) && (!inServer || c.server_id === inServer[1]));
+      return json(res, 200, { channels });
+    }
     if (req.method === 'GET' && (m = /^\/channels\/([^/]+)$/.exec(path))) {
       const channel = state.channels.get(m[1]);
       return channel ? json(res, 200, { channel }) : json(res, 404, { error: 'Unknown channel' });
     }
     if (req.method === 'GET' && (m = /^\/servers\/([^/]+)$/.exec(path))) {
-      return json(res, 200, { server: { id: m[1], name: 'Test server', owner_id: state.serverOwnerId, member_count: 3 } });
+      return json(res, 200, { server: { id: m[1], name: state.servers.get(m[1]) ?? 'Test server', owner_id: state.serverOwnerId, member_count: 3 } });
     }
     return json(res, 404, { error: `No route ${req.method} ${path}` });
   });

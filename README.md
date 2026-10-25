@@ -21,6 +21,7 @@ The utility bot for [yapin.js](https://github.com/yapin-js/yapin.js), built with
 | `/releases status` · `off` · `test` | Shows the settings, turns posts off, or posts the latest release now |
 | `/npm <package>` | Shows any npm package |
 | `/install` | How to install yapin.js, with a starter bot |
+| `/channelid [#channel]` | Shows a channel's id, or lists every text channel in this server with its id |
 | `/ping` · `/about` | Shows latency, uptime and versions |
 | `/announce <version>` · `/docsync [ref]` | Owner only, hidden: re-post a release everywhere, or reload the docs from GitHub |
 
@@ -34,7 +35,12 @@ cp .env.example .env     # then fill in YAPIN_TOKEN
 npm run dev              # node --env-file=.env bot.js
 ```
 
-Get the token from **Settings → Developer → your bot → Token**. Every setting is in [.env.example](.env.example). The ones you're most likely to change are `RELEASE_CHANNEL_IDS` (channels that always get release posts) and `GITHUB_TOKEN`. A GitHub token raises the API limit from 60 to 5000 requests an hour.
+Get the token from **Settings → Developer → your bot → Token**. Every setting is in [.env.example](.env.example). The ones you're most likely to change are:
+
+- **`RELEASE_CHANNELS`:** channels that always get release posts. Use channel names (`announcements`), or `My Server/announcements` if more than one of the bot's servers has that name. Ids work too. At startup the bot logs which channel each name resolved to, and warns about any it couldn't find.
+- **`GITHUB_TOKEN`:** a GitHub personal access token. It raises the API limit from 60 to 5000 requests an hour. If GitHub rejects it, the bot warns once and carries on without it.
+
+`/channelid` lists every text channel in the current server with its id.
 
 On first start the bot records the versions that are already published and doesn't announce them. After that, each new version is posted once. If a version is on npm but its GitHub release isn't up yet, the bot waits up to 15 minutes for the notes before posting. After a release, the docs are reloaded from the release's git tag, so `/help` matches the new version.
 
@@ -42,7 +48,7 @@ Settings and the list of seen versions are saved in `data/state.json`.
 
 ### Yapin’ bot hosting
 
-The project is set up for it: `"start": "node bot.js"`, and the hosting token (`YAPPER_BOT_TOKEN`) is read automatically. Hosting disks may be reset when you redeploy. If that happens, the bot treats its next start as a first start: it records the versions already out without announcing them, and it forgets channels set with `/releases channel`. Put your announcement channels in `RELEASE_CHANNEL_IDS` so they survive.
+The project is set up for it: `"start": "node bot.js"`, and the hosting token (`YAPPER_BOT_TOKEN`) is read automatically. Hosting disks may be reset when you redeploy. If that happens, the bot treats its next start as a first start: it records the versions already out without announcing them, and it forgets channels set with `/releases channel`. Put your announcement channels in `RELEASE_CHANNELS` so they survive.
 
 ## How the docs work
 
@@ -63,7 +69,7 @@ The tests run offline. They start the real bot modules against a mock Yapin’ A
 
 ## Layout
 
-```
+```text
 bot.js               client setup, loads ./modules
 config.js            environment settings and links
 modules/docs.js      /help /docs /api /example, @mention answers, paging buttons
@@ -73,4 +79,8 @@ lib/docs/            markdown parsing, search, embeds
 lib/releases.js      GitHub release notes and the release card
 lib/npm.js           registry client (uses ETags, so a check with nothing new is cheap)
 lib/store.js         JSON file storage with atomic writes
+assets/logo.svg      the logo
+assets/avatar.png    the logo as a 512×512 PNG, for the bot's picture
 ```
+
+To use the logo as the bot's picture, run `await client.user.setAvatar('./assets/avatar.png')` once. Yapin’ only takes PNG, JPG, GIF or WebP, so use the PNG, not the SVG. The picture stays set after that.

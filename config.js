@@ -10,8 +10,11 @@ export const config = {
 
   /** How often to check npm for a new version, in minutes. */
   pollMinutes: Math.max(1, Number(process.env.RELEASE_POLL_MINUTES ?? 5)),
-  /** Channels that get every release, on top of the ones set with /releases channel. */
-  releaseChannels: list(process.env.RELEASE_CHANNEL_IDS),
+  /**
+   * Channels that get every release, on top of the ones set with /releases channel.
+   * Names (`announcements`, `My Server/announcements`) or ids. RELEASE_CHANNEL_IDS is the old name.
+   */
+  releaseChannels: [...list(process.env.RELEASE_CHANNELS), ...list(process.env.RELEASE_CHANNEL_IDS)],
 
   /** Optional: raises the GitHub API limit from 60 to 5000 requests an hour. */
   githubToken: process.env.GITHUB_TOKEN || null,

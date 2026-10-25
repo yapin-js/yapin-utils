@@ -12,6 +12,8 @@ const SERVER = randomUUID();
 const GENERAL = randomUUID();
 const ANNOUNCE = randomUUID();
 const NEWS = randomUUID();
+const OTHER_SERVER = randomUUID();
+const OTHER_GENERAL = randomUUID();
 const ALICE = randomUUID(); // has Manage Server
 const BOB = randomUUID(); // has no roles
 
@@ -55,7 +57,7 @@ const buttonIds = (body) => (body.components ?? []).flatMap((row) => row.compone
 before(async () => {
   const dir = await mkdtemp(join(tmpdir(), 'yapin-utils-'));
   process.env.DATA_FILE = join(dir, 'state.json');
-  process.env.RELEASE_CHANNEL_IDS = ANNOUNCE;
+  process.env.RELEASE_CHANNELS = '#announcements';
   web = fakeWeb();
 
   mock = await startMockYapin();
@@ -63,7 +65,9 @@ before(async () => {
   mock.state.members.set(ALICE, member(ALICE, ['r-admin']));
   mock.state.members.set(BOB, member(BOB, []));
   mock.state.roles = [{ id: 'r-admin', name: 'Admin', color: null, position: 1, manage_server: true, manage_messages: true, perms: {} }];
-  mock.state.channels.set(NEWS, { id: NEWS, name: 'news', type: 'text', server_id: SERVER });
+  mock.state.servers.set(SERVER, 'Test server').set(OTHER_SERVER, 'Other server');
+  const channels = [[GENERAL, 'general', SERVER], [ANNOUNCE, 'announcements', SERVER], [NEWS, 'news', SERVER], [OTHER_GENERAL, 'general', OTHER_SERVER]];
+  for (const [id, name, server] of channels) mock.state.channels.set(id, { id, name, type: 'text', server_id: server });
 
   const { Client, Events } = await import('yapin.js');
   ({ docs, store } = await import('../lib/shared.js'));
@@ -87,7 +91,7 @@ after(async () => {
 test('commands are registered with Yapin’, hidden ones left out', async () => {
   await until(() => mock.state.commands);
   const names = mock.state.commands.map((c) => c.name).sort();
-  for (const name of ['about', 'api', 'docs', 'example', 'help', 'install', 'npm', 'ping', 'release', 'releases']) assert.ok(names.includes(name), name);
+  for (const name of ['about', 'api', 'channelid', 'docs', 'example', 'help', 'install', 'npm', 'ping', 'release', 'releases']) assert.ok(names.includes(name), name);
   assert.ok(!names.includes('announce') && !names.includes('docsync'));
 });
 
@@ -233,12 +237,30 @@ test('/releases channel needs Manage Server, and saves the channel', async () =>
   await until(() => mock.state.sent.slice(before).some((s) => s.body.content?.startsWith('Done.')));
   assert.ok(mock.state.sent.slice(before).some((s) => s.channelId === NEWS && /will be posted here/.test(s.body.content)));
   assert.equal(store.data.servers[SERVER].releaseChannelId, NEWS);
-  assert.deepEqual(releases.targets().sort(), [ANNOUNCE, NEWS].sort());
+  assert.deepEqual((await releases.targets()).sort(), [ANNOUNCE, NEWS].sort());
 
   const status = await say('/releases status');
   assert.ok(status.body.embeds[0].fields.some((f) => f.name === 'Posting in' && f.value === `<#${NEWS}>`));
   await say('/releases off');
   assert.equal(store.data.servers[SERVER].releaseChannelId, undefined);
+});
+
+test('release channels can be given by name, id or server/name', async () => {
+  const { resolveChannels } = await import('../lib/channels.js');
+  const { ids, problems } = await resolveChannels(client, ['#announcements', 'Other server/general', NEWS, `<#${NEWS}>`, 'general', 'nope']);
+  assert.deepEqual(ids.sort(), [NEWS, ANNOUNCE, OTHER_GENERAL].sort());
+  assert.equal(problems.length, 2);
+  assert.match(problems[0], /"general" is in 2 servers \(Test server, Other server\); write it as "Test server\/general"/);
+  assert.match(problems[1], /no text channel called "nope"/);
+});
+
+test('/channelid lists this server’s text channels with their ids', async () => {
+  const all = await say('/channelid');
+  const { description } = all.body.embeds[0];
+  assert.ok(description.includes(`<#${ANNOUNCE}> \`${ANNOUNCE}\``));
+  assert.ok(!description.includes(OTHER_GENERAL), 'only this server');
+  const one = await say(`/channelid <#${NEWS}>`);
+  assert.equal(one.body.content, `<#${NEWS}> is \`${NEWS}\``);
 });
 
 test('no unexpected errors were reported', () => {
