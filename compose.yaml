@@ -1,0 +1,21 @@
+services:
+  bot:
+    build: .
+    image: yapin-utils
+    container_name: yapin-utils
+    restart: unless-stopped
+    # YAPIN_TOKEN and the rest of the settings. See .env.example.
+    env_file: .env
+    # Passes SIGTERM on, so the bot saves its event cursor before stopping.
+    init: true
+    stop_grace_period: 15s
+    volumes:
+      - data:/app/data
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  data:

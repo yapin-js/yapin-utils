@@ -44,6 +44,6 @@ try {
   await client.login();
 } catch (error) {
   if (error.code !== ErrorCodes.TokenMissing && error.code !== ErrorCodes.TokenInvalid) throw error;
-  client.logger.error(`${error.message}\nCopy .env.example to .env, fill in YAPIN_TOKEN, then run npm run dev.`);
+  client.logger.error(`${error.message}\nSet YAPIN_TOKEN in .env (copy .env.example), then start the bot again.`);
   process.exit(1);
 }

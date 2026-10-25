@@ -46,6 +46,18 @@ On first start the bot records the versions that are already published and doesn
 
 Settings and the list of seen versions are saved in `data/state.json`.
 
+### Docker
+
+```sh
+cp .env.example .env     # then fill in YAPIN_TOKEN
+docker compose up -d --build
+docker compose logs -f   # watch it start
+```
+
+The image runs on Node 24, so events come over the gateway instead of polling. The bot runs as the unprivileged `node` user and can only write to `/app/data`. That folder is a named volume (`data`), so settings, seen versions and the event cursor survive restarts and rebuilds. The container restarts by itself unless you stop it. On `docker compose down`, the bot gets SIGTERM and saves its event cursor before it exits, so it catches up on what it missed when it comes back.
+
+After pulling new code, run `docker compose up -d --build` again. To update yapin.js itself, run `npm update yapin.js` to refresh the lockfile, then rebuild.
+
 ### Yapin’ bot hosting
 
 The project is set up for it: `"start": "node bot.js"`, and the hosting token (`YAPPER_BOT_TOKEN`) is read automatically. Hosting disks may be reset when you redeploy. If that happens, the bot treats its next start as a first start: it records the versions already out without announcing them, and it forgets channels set with `/releases channel`. Put your announcement channels in `RELEASE_CHANNELS` so they survive.
